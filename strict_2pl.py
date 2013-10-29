@@ -188,6 +188,10 @@ class Scheduler():
             self.delayed_operations if operation.transaction == transaction]
         return len(pending_operations) == 0
 
+    def has_delayed_operation(self, transaction):
+        return True if [operation for operation in self.delayed_operations\
+            if operation.transaction == transaction] else False
+
     def run_delayed_operations(self):
         if self.delayed_operations:
             redelayed_operations = []
@@ -213,8 +217,8 @@ class Scheduler():
                     (operation.format_as_history())
         elif operation.is_commit():
             if self.can_commit(operation.transaction):
-                self.release_locks(operation.transaction)
                 self.final_history.append(operation)
+                self.release_locks(operation.transaction)
                 self.transactions[operation.transaction].is_growing = False
             else:
                 print 'It is not possible to commit the transaction %s '\
@@ -224,16 +228,28 @@ class Scheduler():
     def run_operations(self):
         self.execution_list = list(self.operations)
         while self.counter < len(self.execution_list):
-            self.run_delayed_operations()
-            operation = self.run_operation(self.execution_list[self.counter])
-            if operation:
-                self.delayed_operations.append(operation)
+            if self.has_delayed_operation(\
+                self.execution_list[self.counter].transaction):
+                self.delayed_operations.append(\
+                    self.execution_list[self.counter])
                 print 'The operation %s was delayed.' %\
-                    (operation.format_as_history())
-                deadlock = self.has_deadlock()
-                if deadlock:
-                    self.abort_transaction(operation.transaction)
+                    (self.execution_list[self.counter].format_as_history())
+            else:
+                operation = self.run_operation(\
+                    self.execution_list[self.counter])
+                if operation:
+                    self.delayed_operations.append(operation)
+                    print 'The operation %s was delayed.' %\
+                        (operation.format_as_history())
+                    deadlock = self.has_deadlock()
+                    if deadlock:
+                        self.abort_transaction(operation.transaction)
+                self.run_delayed_operations()
             self.counter += 1
+            if self.counter == len(self.execution_list):
+                for delayed_operation in self.delayed_operations:
+                    self.execution_list.append(delayed_operation)
+                self.delayed_operations = []
         self.print_final_history()
 
 
@@ -247,3 +263,5 @@ if __name__ == '__main__':
     scheduler.execute('r1[x] w2[y] r1[y] w2[x] c1 c2')
     print 'History with an operation that can\'t be executed'
     scheduler.execute('r1[x] r2[y] r1[y] c1 r1[x] w2[x] c2')
+    print 'History with more than one operation that has to be delayed'
+    scheduler.execute('r1[x] w1[x] w2[x] r2[y] w2[y] c1 c2')
