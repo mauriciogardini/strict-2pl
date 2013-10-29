@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import re
 import sys
-from random import randint
 
 class Operation():
     def __init__(self, transaction, action, resource):
