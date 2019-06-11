@@ -9,3 +9,8 @@ These are the stories that will be executed by the program:
 - Story which has an operation that needs to be delayed: r1[x] w1[x] w2[x] c1 c2
 - Story with a deadlock: r1[x] w2[y] r1[y] w2[x] c1 c2
 - Story which has an operation that can't be executed: r1[x] r2[y] r1[y] c1 r1[x] w2[x] c2
+
+## Usage
+You can run this program with:
+
+`python strict_2pl.py`
